@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "modelos.h"
+#include "validaciones.h"
 
-int main() {
+int main() 
+{
     int opcion;
     float monto_prueba;
+    Cliente nuevo_cliente; // * Memoria temporal para probar el modulo de registro
 
     do {
         printf("\n========================================\n");
@@ -19,34 +22,47 @@ int main() {
         printf("========================================\n");
         printf("Ingrese una opcion: ");
         
-        // Usamos la validación del Dev 2 adaptada para enteros
-        // (El Dev 2 debe crear una variante de leer_monto_valido que retorne int)
         scanf("%d", &opcion);
-        // limpiarBuffer(); // Crucial después de cada scanf
+        // ! Drena el buffer despues del scanf para no corromper los fgets internos
+        limpiarBuffer(); 
 
         switch(opcion) {
             case 1:
                 printf("\n[ Modulo de Registro en construccion ]\n");
-                // Aqui ira tu funcion: registrar_cliente(...)
+                printf("Ingrese el numero de cedula (10 digitos): ");
+                
+                // ! La ejecucion se detiene aqui hasta que se apruebe el algoritmo Modulo 10
+                leer_cedula_valida(nuevo_cliente.cedula);
+                
+                printf("=> Estructura aceptada: Cedula %s validada matematicamente.\n", nuevo_cliente.cedula);
                 break;
+                
             case 2:
                 printf("\n[ Modulo de Transacciones ]\n");
-                printf("Ingrese el monto a depositar: ");
-                // monto_prueba = leerMontoValido(); // Uso de la funcion segura
-                // printf("Monto %.2f procesado exitosamente (simulacion).\n", monto_prueba);
+                printf("Ingrese el monto a depositar: $");
+                
+                // ! La ejecucion se detiene aqui hasta recibir un formato financiero estricto
+                monto_prueba = leerMontoValido(); 
+                
+                printf("=> Logica aceptada: Monto $%.2f procesado exitosamente.\n", monto_prueba);
                 break;
+                
             case 3:
                 printf("\n[ Modulo de Transferencias en construccion ]\n");
                 break;
+                
             case 4:
                 printf("\n[ Modulo de Reportes en construccion ]\n");
                 break;
+                
             case 5:
                 printf("\n[ Modulo de Boveda en construccion ]\n");
                 break;
+                
             case 6:
                 printf("\nCerrando sistema y liberando memoria...\n");
                 break;
+                
             default:
                 printf("\nOpcion no valida. Intente de nuevo.\n");
         }
