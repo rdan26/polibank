@@ -43,5 +43,6 @@ void procesar_deposito(Cliente *cliente, float monto)
     cta->saldo_actual += monto;
     cta->num_transacciones++;
 
-    printf("=> Transaccion %d exitosa. Nuevo saldo: $%.2f\n", cta->historial[indice].id_transaccion, cta->saldo_actual);
+    printf("=> Comprobante: Transaccion %d procesada exitosamente. Monto ingresado: $%.2f\n", 
+        cta->historial[indice].id_transaccion, monto);
 }
