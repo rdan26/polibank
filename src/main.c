@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "modelos.h"
-#include "validaciones.h"
 
 int main() {
     int opcion;
@@ -23,7 +22,7 @@ int main() {
         // Usamos la validación del Dev 2 adaptada para enteros
         // (El Dev 2 debe crear una variante de leer_monto_valido que retorne int)
         scanf("%d", &opcion);
-        limpiarBuffer(); // Crucial después de cada scanf
+        // limpiarBuffer(); // Crucial después de cada scanf
 
         switch(opcion) {
             case 1:
@@ -33,8 +32,8 @@ int main() {
             case 2:
                 printf("\n[ Modulo de Transacciones ]\n");
                 printf("Ingrese el monto a depositar: ");
-                monto_prueba = leerMontoValido(); // Uso de la funcion segura
-                printf("Monto %.2f procesado exitosamente (simulacion).\n", monto_prueba);
+                // monto_prueba = leerMontoValido(); // Uso de la funcion segura
+                // printf("Monto %.2f procesado exitosamente (simulacion).\n", monto_prueba);
                 break;
             case 3:
                 printf("\n[ Modulo de Transferencias en construccion ]\n");
