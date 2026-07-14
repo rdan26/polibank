@@ -3,16 +3,16 @@
 
 #include "modelos.h"
 
-// * Inyecta capital a la cuenta y registra el movimiento en la memoria dinamica
-void procesar_deposito(Cliente *cliente, float monto);
+// * Inyecta capital a la cuenta especificada si pertenece al cliente
+void procesar_deposito(Cliente *cliente, int numero_cuenta, float monto);
 
-// * Inyeccion simultanea en dos cuentas distintas
-void procesar_transferencia(Cliente *origen, Cliente *destino, float monto);
+// * Realiza transferencias simultáneas verificando pertenencia de cuentas
+void procesar_transferencia(Cliente *origen, int num_cuenta_origen, Cliente *destino, int num_cuenta_destino, float monto);
 
-// * Proceso de retiro
-void procesar_retiro(Cliente *cliente, float monto);
+// * Procesa un retiro verificando fondos y pertenencia
+void procesar_retiro(Cliente *cliente, int numero_cuenta, float monto);
 
-// * Lectura de estado (El modificador const blinda la memoria contra alteraciones)
+// * Lectura de estado total del cliente
 void imprimir_estado_cuenta(const Cliente *cliente);
 
 #endif // TRANSACCIONES_H

@@ -5,126 +5,180 @@
 #include "cuentas.h"
 #include "validaciones.h"
 
-void registrar_cliente(Cliente *nuevo_cliente, const char *cedula_validada)
+void registrar_cliente(Cliente *cliente, const char *cedula_validada)
 {
-    // * Asignacion de identidad
-    strcpy(nuevo_cliente->cedula, cedula_validada);
-
-    printf("Ingrese el nombre completo (nombre/s apellido/s): ");
-    
-    // ! BARRERA ESTRUCTURAL Y DE CARACTERES
-    while (1)
+    // * 1. Inicialización de datos personales si es el primer registro del cliente
+    if (cliente->num_cuentas == 0)
     {
-        leerCadenaSegura(nuevo_cliente->nombre_completo, MAX_NOMBRE);
+        strcpy(cliente->cedula, cedula_validada);
 
-        // * 1. Validacion de pureza de caracteres (Whitelist)
-        int caracteres_validos = 1;
-        for (int i = 0; nuevo_cliente->nombre_completo[i] != '\0'; i++)
+        printf("Ingrese el nombre completo (nombre/s apellido/s): ");
+        
+        // ! BARRERA ESTRUCTURAL Y DE CARACTERES
+        while (1)
         {
-            char c = nuevo_cliente->nombre_completo[i];
-            
-            // ! Si NO es letra, NO es espacio, NO es guion y NO es apostrofe, es invalido.
-            if (!isalpha(c) && c != ' ' && c != '-' && c != '\'')
+            leerCadenaSegura(cliente->nombre_completo, MAX_NOMBRE);
+
+            // * Validacion de pureza de caracteres (Whitelist)
+            int caracteres_validos = 1;
+            for (int i = 0; cliente->nombre_completo[i] != '\0'; i++)
             {
-                caracteres_validos = 0;
-                break;
-            }
-        }
-
-        if (!caracteres_validos)
-        {
-            printf("Error: El nombre contiene numeros o simbolos no permitidos.\n");
-            printf("Solo se permiten letras, espacios, guiones (-) y apostrofes (').\n");
-            printf("Intente de nuevo: ");
-            continue; // ! Interrumpe el ciclo actual y vuelve a pedir la cadena
-        }
-
-        // * 2. Validacion de estructura (Al menos dos palabras)
-        int contador_palabras = 0;
-        int dentro_de_palabra = 0;
-
-        for (int i = 0; nuevo_cliente->nombre_completo[i] != '\0'; i++)
-        {
-            if (nuevo_cliente->nombre_completo[i] != ' ')
-            {
-                if (!dentro_de_palabra)
+                char c = cliente->nombre_completo[i];
+                
+                // ! Si NO es letra, NO es espacio, NO es guion y NO es apostrofe, es invalido.
+                if (!isalpha(c) && c != ' ' && c != '-' && c != '\'')
                 {
-                    contador_palabras++;
-                    dentro_de_palabra = 1; 
+                    caracteres_validos = 0;
+                    break;
                 }
+            }
+
+            if (!caracteres_validos)
+            {
+                printf("\n========================================\n");
+                printf("[ERROR DE VALIDACION]\n");
+                printf("Motivo: El nombre contiene caracteres invalidos.\n");
+                printf("Causal: Se detectaron numeros, simbolos o caracteres especiales.\n");
+                printf("Accion: Use unicamente letras, espacios, guiones (-) y apostrofes (').\n");
+                printf("========================================\n");
+                printf("Intente de nuevo: ");
+                continue; 
+            }
+
+            // * Validacion de estructura (Al menos dos palabras)
+            int contador_palabras = 0;
+            int dentro_de_palabra = 0;
+
+            for (int i = 0; cliente->nombre_completo[i] != '\0'; i++)
+            {
+                if (cliente->nombre_completo[i] != ' ')
+                {
+                    if (!dentro_de_palabra)
+                    {
+                        contador_palabras++;
+                        dentro_de_palabra = 1; 
+                    }
+                }
+                else
+                {
+                    dentro_de_palabra = 0; 
+                }
+            }
+
+            if (contador_palabras >= 2)
+            {
+                break; // * La cadena sobrevivio a todas las validaciones
             }
             else
             {
-                dentro_de_palabra = 0; 
+                printf("\n========================================\n");
+                printf("[ERROR DE VALIDACION]\n");
+                printf("Motivo: Estructura nominal incompleta.\n");
+                printf("Causal: No se proporcionaron nombres y apellidos completos.\n");
+                printf("Accion: Debe ingresar al menos un nombre y un apellido.\n");
+                printf("========================================\n");
+                printf("Intente de nuevo: ");
             }
         }
 
-        if (contador_palabras >= 2)
+        // ! NORMALIZACION DE DATOS: Formato Title Case (Sensible a guiones y apostrofes)
+        int capitalizar_siguiente = 1; 
+        
+        for (int i = 0; cliente->nombre_completo[i] != '\0'; i++)
         {
-            break; // * La cadena sobrevivio a todas las validaciones
+            char c = cliente->nombre_completo[i];
+            
+            if (c == ' ' || c == '-' || c == '\'')
+            {
+                capitalizar_siguiente = 1; 
+            }
+            else if (capitalizar_siguiente && isalpha(c))
+            {
+                cliente->nombre_completo[i] = toupper(c);
+                capitalizar_siguiente = 0; 
+            }
+            else if (isalpha(c))
+            {
+                cliente->nombre_completo[i] = tolower(c);
+            }
+        }
+    }
+
+    // * 2. Validación de Límites de Cuenta
+    if (cliente->num_cuentas >= MAX_CUENTAS_POR_CLIENTE)
+    {
+        printf("\n========================================\n");
+        printf("[ERROR DE REGISTRO]\n");
+        printf("Motivo: Limite de cuentas excedido.\n");
+        printf("Causal: El titular de cedula %s ya posee %d cuentas (limite maximo).\n", cliente->cedula, MAX_CUENTAS_POR_CLIENTE);
+        printf("Accion: Cierre o reestructure cuentas previas antes de intentar de nuevo.\n");
+        printf("========================================\n");
+        return;
+    }
+
+    // * 3. Inicialización matemática y comercial de la nueva cuenta
+    int indice_nueva_cuenta = cliente->num_cuentas;
+    Cuenta *nueva_cuenta = &cliente->cuentas[indice_nueva_cuenta];
+
+    nueva_cuenta->numero_cuenta = rand() % 900000 + 100000;
+    
+    printf("\nSeleccione el tipo de cuenta:\n");
+    printf("1. Ahorros\n");
+    printf("2. Corriente\n");
+    printf("Ingrese una opcion: ");
+    char op_tipo[10];
+    while (1)
+    {
+        leerCadenaSegura(op_tipo, 10);
+        int op_num = atoi(op_tipo);
+        if (op_num == 1)
+        {
+            strcpy(nueva_cuenta->tipo_cuenta, "Ahorros");
+            break;
+        }
+        else if (op_num == 2)
+        {
+            strcpy(nueva_cuenta->tipo_cuenta, "Corriente");
+            break;
         }
         else
         {
-            printf("Error: Registro incompleto. Debe ingresar al menos un nombre y un apellido.\n");
-            printf("Intente de nuevo: ");
+            printf("Error: Seleccion invalida. Ingrese 1 para Ahorros o 2 para Corriente: ");
         }
     }
 
-    // ! NORMALIZACION DE DATOS: Formato Title Case (Sensible a guiones y apostrofes)
-    int capitalizar_siguiente = 1; 
-    
-    for (int i = 0; nuevo_cliente->nombre_completo[i] != '\0'; i++)
-    {
-        char c = nuevo_cliente->nombre_completo[i];
-        
-        // * El siguiente caracter util se capitaliza si venimos de un espacio, guion o apostrofe
-        if (c == ' ' || c == '-' || c == '\'')
-        {
-            capitalizar_siguiente = 1; 
-        }
-        else if (capitalizar_siguiente && isalpha(c))
-        {
-            nuevo_cliente->nombre_completo[i] = toupper(c);
-            capitalizar_siguiente = 0; 
-        }
-        else if (isalpha(c))
-        {
-            nuevo_cliente->nombre_completo[i] = tolower(c);
-        }
-    }
+    nueva_cuenta->saldo_actual = 0.0f;
+    nueva_cuenta->num_transacciones = 0;
+    nueva_cuenta->capacidad_historial = CAPACIDAD_INICIAL_HISTORIAL;
 
-    // * Inicializacion matematica y comercial de la cuenta
-    nuevo_cliente->cuenta_bancaria.numero_cuenta = rand() % 900000 + 100000;
-    strcpy(nuevo_cliente->cuenta_bancaria.tipo_cuenta, "Ahorros");
-    nuevo_cliente->cuenta_bancaria.saldo_actual = 0.0f;
-    nuevo_cliente->cuenta_bancaria.num_transacciones = 0;
-    nuevo_cliente->cuenta_bancaria.capacidad_historial = CAPACIDAD_INICIAL_HISTORIAL;
+    // * Asignación dinámica de memoria en el Heap
+    nueva_cuenta->historial = (Transaccion *)malloc(CAPACIDAD_INICIAL_HISTORIAL * sizeof(Transaccion));
 
-    // * Asignacion dinamica de memoria en el Heap
-    nuevo_cliente->cuenta_bancaria.historial = (Transaccion *)malloc(CAPACIDAD_INICIAL_HISTORIAL * sizeof(Transaccion));
-
-    if (nuevo_cliente->cuenta_bancaria.historial == NULL)
+    if (nueva_cuenta->historial == NULL)
     {
         printf("\nError CRITICO: Fallo al asignar memoria dinamica (malloc).\n");
         exit(1); 
     }
 
-    printf("\n=> Memoria inicializada. Cliente '%s' registrado (Cuenta: %d).\n", 
-           nuevo_cliente->nombre_completo, 
-           nuevo_cliente->cuenta_bancaria.numero_cuenta);
+    cliente->num_cuentas++;
+
+    printf("\n========================================\n");
+    printf("[REGISTRO EXITOSO]\n");
+    printf("Cliente:            %s\n", cliente->nombre_completo);
+    printf("Cedula:             %s\n", cliente->cedula);
+    printf("Cuenta Aperturada:  #%d (%s)\n", nueva_cuenta->numero_cuenta, nueva_cuenta->tipo_cuenta);
+    printf("Cuentas Totales:    %d / %d\n", cliente->num_cuentas, MAX_CUENTAS_POR_CLIENTE);
+    printf("========================================\n");
 }
 
 int buscar_cliente_por_cedula(Cliente banco[], int total_clientes, const char *cedula)
 {
-    // * Escanea la memoria activa desde el primer cliente hasta el total registrado
     for (int i = 0; i < total_clientes; i++)
     {
-        // * strcmp devuelve 0 si ambas cadenas de texto son exactas
         if (strcmp(banco[i].cedula, cedula) == 0)
         {
-            return i; // * Retorna la posicion exacta (indice) del cliente en el arreglo
+            return i; 
         }
     }
-    
-    return -1; // ! -1 actua como bandera de que la cedula no fue encontrada
+    return -1; 
 }

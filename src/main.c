@@ -1,29 +1,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 #include "modelos.h"
 #include "validaciones.h"
 #include "cuentas.h"
 #include "transacciones.h"
 
-// * Limite de base de datos en RAM para no agotar la memoria del sistema
 #define MAX_CLIENTES_BANCO 100 
 
 int main(void) 
 {
-    // * Seed aleatoria usando el reloj del procesador
     srand(time(NULL));
 
     int opcion;
     float monto_prueba;
     
-    // * Arreglo de estructuras inicializado en cero absoluto
     Cliente banco[MAX_CLIENTES_BANCO] = {0}; 
-    int total_clientes = 0; // ! Contador para saber donde escribir el siguiente registro
+    int total_clientes = 0; 
 
     do {
         printf("\n========================================\n");
-        printf("         POLI BANK - SISTEMA BASE       \n");
+        printf("         POLI BANK - PLATAFORMA         \n");
         printf("========================================\n");
         printf("Clientes Registrados: %d / %d\n", total_clientes, MAX_CLIENTES_BANCO);
         printf("----------------------------------------\n");
@@ -36,280 +34,273 @@ int main(void)
         printf("========================================\n");
         printf("Ingrese una opcion: ");
         
-        // * Seguridad contra caracteres invalidos en el menu principal
         char entrada_opcion[10];
         leerCadenaSegura(entrada_opcion, 10);
-        
-        // * atoi convierte el texto a numero 
-        // ! Si detecta letras, devuelve 0 
         opcion = atoi(entrada_opcion);
 
         switch(opcion) {
             case 1:
-                printf("\n[ MODULO DE REGISTRO ]\n");
+                printf("\n[ MODULO DE REGISTRO / APERTURA DE CUENTAS ]\n");
                 
-                // * Barrera contra desbordamiento del arreglo de clientes
-                if (total_clientes >= MAX_CLIENTES_BANCO) {
-                    printf("Error: La capacidad maxima del banco (%d clientes) ha sido alcanzada.\n", MAX_CLIENTES_BANCO);
-                    break;
-                }
-
-                printf("Ingrese el numero de cedula (10 digitos, o 'X' para cancelar): ");
                 char cedula_temporal[15]; 
-                
-                // ! Intercepcion del estado: 0 significa que el usuario aborto la operacion
                 if (leer_cedula_valida(cedula_temporal) == 0) {
-                    printf("=> Operacion cancelada por el usuario. Retornando al menu...\n");
+                    printf("=> Operacion cancelada por el usuario. Retornando al menu principal...\n");
                     break;
                 }
                 
-                // * Motor de busqueda con bloqueo de duplicados
-                if (buscar_cliente_por_cedula(banco, total_clientes, cedula_temporal) != -1) {
-                    printf("Error: La cedula %s ya pertenece a una cuenta existente.\n", cedula_temporal);
-                    break; // ! Aborta el registro
+                int indice_cliente = buscar_cliente_por_cedula(banco, total_clientes, cedula_temporal);
+                
+                if (indice_cliente != -1) {
+                    // Cliente ya existe en el sistema
+                    Cliente *existente = &banco[indice_cliente];
+                    if (existente->num_cuentas >= MAX_CUENTAS_POR_CLIENTE) {
+                        printf("\n========================================\n");
+                        printf("[ERROR DE REGISTRO]\n");
+                        printf("Motivo: Limite de cuentas alcanzado.\n");
+                        printf("Causal: El cliente '%s' ya tiene el maximo permitido de %d cuentas.\n", existente->nombre_completo, MAX_CUENTAS_POR_CLIENTE);
+                        printf("Accion: Ninguna operacion de registro adicional es viable.\n");
+                        printf("========================================\n");
+                    } else {
+                        printf("\nCliente registrado encontrado: %s\n", existente->nombre_completo);
+                        printf("Posee %d cuentas activas. ¿Aperturar una nueva cuenta? (S/N): ", existente->num_cuentas);
+                        char conf[10];
+                        leerCadenaSegura(conf, 10);
+                        if (conf[0] == 'S' || conf[0] == 's') {
+                            registrar_cliente(existente, cedula_temporal);
+                        } else {
+                            printf("=> Operacion de registro cancelada.\n");
+                        }
+                    }
+                } else {
+                    // Cliente nuevo
+                    if (total_clientes >= MAX_CLIENTES_BANCO) {
+                        printf("\n========================================\n");
+                        printf("[ERROR DE REGISTRO]\n");
+                        printf("Motivo: Base de datos saturada.\n");
+                        printf("Causal: Se ha alcanzado el limite maximo de %d clientes en el sistema.\n", MAX_CLIENTES_BANCO);
+                        printf("========================================\n");
+                        break;
+                    }
+                    
+                    registrar_cliente(&banco[total_clientes], cedula_temporal);
+                    total_clientes++; 
                 }
-                
-                // * Asignacion en memoria, apunta exactamente al espacio libre 'total_clientes'
-                registrar_cliente(&banco[total_clientes], cedula_temporal);
-                
-                // * Actualizamos el contador del sistema
-                total_clientes++; 
                 break;
                 
             case 2:
                 printf("\n[ MODULO DE DEPOSITOS ]\n");
                 
-                // ! No operar si el banco esta vacio
                 if (total_clientes == 0) {
-                    printf("Error: No hay clientes registrados en el sistema. Registre uno primero (Opcion 1).\n");
+                    printf("Error: No hay clientes en el sistema. Debe registrar un cliente primero.\n");
                     break;
                 }
 
-                printf("Ingrese la cedula de la cuenta a la cual desea depositar (o 'X' para cancelar): ");
                 char cedula_busqueda[15];
-                
-                // ! Intercepcion del estado: 0 significa que el usuario aborto la operacion
                 if (leer_cedula_valida(cedula_busqueda) == 0) {
-                    printf("=> Operacion cancelada por el usuario. Retornando al menu...\n");
+                    printf("=> Operacion cancelada por el usuario.\n");
                     break;
                 }
 
-                // * Busqueda del indice de destino
                 int indice_destino = buscar_cliente_por_cedula(banco, total_clientes, cedula_busqueda);
 
-                // ! Si retorna -1, el cliente no existe
                 if (indice_destino == -1) {
-                    printf("Error: No se encontro ningun cliente con la cedula %s.\n", cedula_busqueda);
+                    printf("\n========================================\n");
+                    printf("[ERROR DE BUSQUEDA]\n");
+                    printf("Motivo: Destinatario no encontrado.\n");
+                    printf("Causal: Ningun cliente coincide con la cedula '%s'.\n", cedula_busqueda);
+                    printf("Accion: Revise que el titular se encuentre registrado.\n");
+                    printf("========================================\n");
                     break;
                 }
 
-                printf("\n----------------------------------------\n");
-                printf("Cliente Destino: %s\n", banco[indice_destino].nombre_completo);
-                printf("Numero de Cuenta: %d\n", banco[indice_destino].cuenta_bancaria.numero_cuenta);
-                printf("----------------------------------------\n");
-
-                // ! Mecanismo de escape
-                printf("Es este el destinatario correcto? (S para confirmar, N para cancelar): ");
-                char confirmacion[10];
-                leerCadenaSegura(confirmacion, 10);
-
-                if (confirmacion[0] == 'N' || confirmacion[0] == 'n')
-                {
-                    printf("=> Operacion cancelada por el usuario. Retornando al menu...\n");
-                    break;
-                }
-                else if (confirmacion[0] != 'S' && confirmacion[0] != 's')
-                {
-                    printf("=> Entrada no reconocida. Abortando transaccion por seguridad...\n");
-                    break;
+                Cliente *dest = &banco[indice_destino];
+                printf("\nCuentas registradas para %s:\n", dest->nombre_completo);
+                for (int i = 0; i < dest->num_cuentas; i++) {
+                    printf("- Cuenta #%d (%s) | Saldo actual: $%.2f\n", dest->cuentas[i].numero_cuenta, dest->cuentas[i].tipo_cuenta, dest->cuentas[i].saldo_actual);
                 }
 
-                printf("INFO: El sistema requiere un formato financiero estricto.\n");
-                printf("Utilice el punto (.) para los decimales y proporcione\n");
-                printf("exactamente dos digitos al final.\n");
-                printf("----------------------------------------\n");
-                
-                printf("Ingrese el monto a depositar (ej. 15.00, 120.50): $");
+                printf("\nIngrese el numero de cuenta (6 digitos) para el deposito: ");
+                char num_cta_str[15];
+                leerCadenaSegura(num_cta_str, 15);
+                int num_cta = atoi(num_cta_str);
+
+                printf("Ingrese el monto a depositar (ej. 15, 120.50): $");
                 monto_prueba = leerMontoValido(); 
                 
-                // * Inyeccion de memoria en el puntero exacto del cliente encontrado
-                procesar_deposito(&banco[indice_destino], monto_prueba);
+                procesar_deposito(dest, num_cta, monto_prueba);
                 break;
                 
             case 3:
                 printf("\n[ MODULO DE TRANSFERENCIAS ]\n");
 
-                // ! Se necesitan al menos 2 clientes en el sistema
-                if (total_clientes < 2) {
-                    printf("Error: Se requieren al menos 2 clientes registrados para realizar una transferencia.\n");
+                if (total_clientes == 0) {
+                    printf("Error: Se requieren registros previos de clientes para transferir.\n");
                     break;
                 }
 
-                // * Localizacion del origen
-                printf("Ingrese la cedula de la cuenta ORIGEN (o 'X' para cancelar): ");
+                // * Localización de Origen
+                printf("\n[Identificacion del Emisor]\n");
                 char cedula_origen[15];
                 if (leer_cedula_valida(cedula_origen) == 0) {
-                    printf("=> Operacion cancelada. Retornando al menu...\n");
+                    printf("=> Operacion cancelada.\n");
                     break;
                 }
                 
-                int indice_origen = buscar_cliente_por_cedula(banco, total_clientes, cedula_origen);
-                if (indice_origen == -1) {
-                    printf("Error: No se encontro la cuenta de origen.\n");
+                int idx_origen = buscar_cliente_por_cedula(banco, total_clientes, cedula_origen);
+                if (idx_origen == -1) {
+                    printf("\n========================================\n");
+                    printf("[ERROR DE IDENTIFICACION]\n");
+                    printf("Motivo: Emisor inexistente.\n");
+                    printf("Causal: No se encontro un cliente bajo la cedula %s.\n", cedula_origen);
+                    printf("========================================\n");
                     break;
                 }
 
-                // * Localizacion del destino
-                printf("Ingrese la cedula de la cuenta DESTINO (o 'X' para cancelar): ");
+                Cliente *cli_origen = &banco[idx_origen];
+                printf("\nCuentas del emisor (%s):\n", cli_origen->nombre_completo);
+                for (int i = 0; i < cli_origen->num_cuentas; i++) {
+                    printf("- Cuenta #%d (%s) | Saldo: $%.2f\n", cli_origen->cuentas[i].numero_cuenta, cli_origen->cuentas[i].tipo_cuenta, cli_origen->cuentas[i].saldo_actual);
+                }
+
+                printf("Ingrese el numero de cuenta de origen: ");
+                char cta_orig_str[15];
+                leerCadenaSegura(cta_orig_str, 15);
+                int cta_orig = atoi(cta_orig_str);
+
+                // * Localización de Destino
+                printf("\n[Identificacion del Receptor]\n");
                 char cedula_destino[15];
                 if (leer_cedula_valida(cedula_destino) == 0) {
-                    printf("=> Operacion cancelada. Retornando al menu...\n");
+                    printf("=> Operacion cancelada.\n");
                     break;
                 }
                 
-                int indice_destino_trans = buscar_cliente_por_cedula(banco, total_clientes, cedula_destino);
-                if (indice_destino_trans == -1) {
-                    printf("Error: No se encontro la cuenta de destino.\n");
+                int idx_dest = buscar_cliente_por_cedula(banco, total_clientes, cedula_destino);
+                if (idx_dest == -1) {
+                    printf("\n========================================\n");
+                    printf("[ERROR DE IDENTIFICACION]\n");
+                    printf("Motivo: Receptor inexistente.\n");
+                    printf("Causal: No se encontro un cliente bajo la cedula %s.\n", cedula_destino);
+                    printf("========================================\n");
                     break;
                 }
 
-                // ! Barrera 2: Bloqueo de auto-transferencia (mismo indice de memoria)
-                if (indice_origen == indice_destino_trans) {
-                    printf("Error: Operacion invalida. No puede transferir fondos a la misma cuenta.\n");
+                Cliente *cli_destino = &banco[idx_dest];
+                printf("\nCuentas del receptor (%s):\n", cli_destino->nombre_completo);
+                for (int i = 0; i < cli_destino->num_cuentas; i++) {
+                    printf("- Cuenta #%d (%s)\n", cli_destino->cuentas[i].numero_cuenta, cli_destino->cuentas[i].tipo_cuenta);
+                }
+
+                printf("Ingrese el numero de cuenta del destinatario: ");
+                char cta_dest_str[15];
+                leerCadenaSegura(cta_dest_str, 15);
+                int cta_dest = atoi(cta_dest_str);
+
+                // ! Bloqueo de auto-transferencia en la misma cuenta física
+                if (cta_orig == cta_dest) {
+                    printf("\n========================================\n");
+                    printf("[ERROR DE OPERACION]\n");
+                    printf("Motivo: Auto-transferencia denegada.\n");
+                    printf("Causal: No se permite transaccionar fondos hacia la misma cuenta de origen.\n");
+                    printf("========================================\n");
                     break;
                 }
 
-                // * Despliegue y confirmacion
-                printf("\n----------------------------------------\n");
-                printf("ORIGEN:  %s (Saldo Disponible: $%.2f)\n", banco[indice_origen].nombre_completo, banco[indice_origen].cuenta_bancaria.saldo_actual);
-                printf("DESTINO: %s\n", banco[indice_destino_trans].nombre_completo);
-                printf("----------------------------------------\n");
-
-                printf("Confirmar transaccion? (S para confirmar, N para cancelar): ");
-                char conf_trans[10];
-                leerCadenaSegura(conf_trans, 10);
-
-                if (conf_trans[0] == 'N' || conf_trans[0] == 'n') {
-                    printf("=> Operacion cancelada por el usuario. Retornando al menu...\n");
-                    break;
-                } else if (conf_trans[0] != 'S' && conf_trans[0] != 's') {
-                    printf("=> Entrada no reconocida. Abortando transaccion por seguridad...\n");
-                    break;
-                }
-
-                // * Validacion matematica de fondos
-                printf("Ingrese el monto a transferir (ej. 15.00, 120.50): $");
+                printf("\nIngrese el monto a transferir (ej. 15, 120.50): $");
                 float monto_transferencia = leerMontoValido(); 
 
-                // ! Prevencion de sobregiro
-                if (monto_transferencia > banco[indice_origen].cuenta_bancaria.saldo_actual) {
-                    printf("\nError CRITICO: Fondos insuficientes.\n");
-                    printf("=> Saldo actual: $%.2f | Monto solicitado: $%.2f\n", banco[indice_origen].cuenta_bancaria.saldo_actual, monto_transferencia);
-                    break;
-                }
-
-                // * Inyeccion de memoria sinmultanea
-                procesar_transferencia(&banco[indice_origen], &banco[indice_destino_trans], monto_transferencia);
+                procesar_transferencia(cli_origen, cta_orig, cli_destino, cta_dest, monto_transferencia);
                 break;
                 
             case 4:
                 printf("\n[ MODULO DE RETIROS ]\n");
                 
-                // ! No operar si el banco esta vacio
                 if (total_clientes == 0) {
-                    printf("Error: No hay clientes registrados en el sistema.\n");
+                    printf("Error: No existen clientes para transaccionar.\n");
                     break;
                 }
 
-                printf("Ingrese su numero de cedula (o 'X' para cancelar): ");
                 char cedula_retiro[15];
-                
                 if (leer_cedula_valida(cedula_retiro) == 0) {
-                    printf("=> Operacion cancelada por el usuario. Retornando al menu...\n");
+                    printf("=> Operacion cancelada.\n");
                     break;
                 }
 
-                int indice_retiro = buscar_cliente_por_cedula(banco, total_clientes, cedula_retiro);
+                int idx_retiro = buscar_cliente_por_cedula(banco, total_clientes, cedula_retiro);
 
-                if (indice_retiro == -1) {
-                    printf("Error: No se encontro ningun cliente con esa cedula.\n");
+                if (idx_retiro == -1) {
+                    printf("\n========================================\n");
+                    printf("[ERROR DE IDENTIFICACION]\n");
+                    printf("Motivo: Cliente no registrado.\n");
+                    printf("Causal: Los registros no contemplan la identificacion %s.\n", cedula_retiro);
+                    printf("========================================\n");
                     break;
                 }
 
-                printf("\n----------------------------------------\n");
-                printf("Cliente: %s\n", banco[indice_retiro].nombre_completo);
-                printf("Saldo Disponible: $%.2f\n", banco[indice_retiro].cuenta_bancaria.saldo_actual);
-                printf("----------------------------------------\n");
-
-                printf("Es esta su cuenta? (S para confirmar, N para cancelar): ");
-                char conf_retiro[10];
-                leerCadenaSegura(conf_retiro, 10);
-
-                if (conf_retiro[0] == 'N' || conf_retiro[0] == 'n') {
-                    printf("=> Operacion cancelada. Retornando al menu...\n");
-                    break;
-                } else if (conf_retiro[0] != 'S' && conf_retiro[0] != 's') {
-                    printf("=> Entrada no reconocida. Abortando transaccion...\n");
-                    break;
+                Cliente *cli_ret = &banco[idx_retiro];
+                printf("\nCuentas asociadas a %s:\n", cli_ret->nombre_completo);
+                for (int i = 0; i < cli_ret->num_cuentas; i++) {
+                    printf("- Cuenta #%d (%s) | Saldo Disponible: $%.2f\n", cli_ret->cuentas[i].numero_cuenta, cli_ret->cuentas[i].tipo_cuenta, cli_ret->cuentas[i].saldo_actual);
                 }
 
-                printf("Ingrese el monto a retirar (ej. 15.00, 120.50): $");
+                printf("Ingrese el numero de cuenta desde la cual desea retirar: ");
+                char cta_ret_str[15];
+                leerCadenaSegura(cta_ret_str, 15);
+                int cta_ret = atoi(cta_ret_str);
+
+                printf("Ingrese el monto a retirar (ej. 15, 120.50): $");
                 float monto_retiro = leerMontoValido(); 
 
-                // ! Barrera de proteccion: Restriccion de limite de fondos
-                if (monto_retiro > banco[indice_retiro].cuenta_bancaria.saldo_actual) {
-                    printf("\nError CRITICO: Fondos insuficientes para realizar el retiro.\n");
-                    printf("=> Saldo disponible: $%.2f\n", banco[indice_retiro].cuenta_bancaria.saldo_actual);
-                    break;
-                }
-                
-                procesar_retiro(&banco[indice_retiro], monto_retiro);
+                procesar_retiro(cli_ret, cta_ret, monto_retiro);
                 break;
                 
             case 5:
                 printf("\n[ MODULO DE ESTADO DE CUENTA ]\n");
                 
                 if (total_clientes == 0) {
-                    printf("Error: No hay clientes registrados en el sistema.\n");
+                    printf("Error: No hay datos registrados.\n");
                     break;
                 }
 
-                printf("Ingrese el numero de cedula a consultar (o 'X' para cancelar): ");
                 char cedula_consulta[15];
-                
                 if (leer_cedula_valida(cedula_consulta) == 0) {
-                    printf("=> Operacion cancelada. Retornando al menu...\n");
+                    printf("=> Operacion cancelada.\n");
                     break;
                 }
 
-                int indice_consulta = buscar_cliente_por_cedula(banco, total_clientes, cedula_consulta);
+                int idx_consulta = buscar_cliente_por_cedula(banco, total_clientes, cedula_consulta);
 
-                if (indice_consulta == -1) {
-                    printf("Error: No se encontro ninguna cuenta con esa cedula.\n");
+                if (idx_consulta == -1) {
+                    printf("\n========================================\n");
+                    printf("[ERROR DE IDENTIFICACION]\n");
+                    printf("Motivo: Cliente no ubicado.\n");
+                    printf("Causal: No se hallo informacion asociada a la cedula %s.\n", cedula_consulta);
+                    printf("========================================\n");
                     break;
                 }
                 
-                // * Despliegue de la memoria en modo solo lectura
-                imprimir_estado_cuenta(&banco[indice_consulta]);
+                imprimir_estado_cuenta(&banco[idx_consulta]);
                 break;
                 
             case 6:
-                printf("\n[ PROTOCOLO DE DESTRUCCION ]\n");
-                printf("Cerrando sistema y liberando memoria RAM...\n");
+                printf("\n[ PROTOCOLO DE DESTRUCCION DE MEMORIA ]\n");
+                printf("Liberando recursos asignados en el Heap...\n");
                 
-                // ! Barrido de memoria dinamica (Heap)
+                // ! Barrido completo de la estructura bidimensional dinámica
                 for (int i = 0; i < total_clientes; i++) {
-                    if (banco[i].cuenta_bancaria.historial != NULL) {
-                        free(banco[i].cuenta_bancaria.historial);
-                        banco[i].cuenta_bancaria.historial = NULL; // !Prevencion de punteros colgantes (Dangling Pointers)
+                    for (int j = 0; j < banco[i].num_cuentas; j++) {
+                        if (banco[i].cuentas[j].historial != NULL) {
+                            free(banco[i].cuentas[j].historial);
+                            banco[i].cuentas[j].historial = NULL; 
+                        }
                     }
                 }
                 
-                printf("=> Memoria liberada exitosamente. Hasta pronto.\n");
+                printf("=> Memoria liberada de forma segura. Apagando terminal.\n");
                 break;
                 
             default:
-                printf("\nOpcion no valida. Intente de nuevo.\n");
+                printf("\nOpcion no valida. Por favor intente de nuevo.\n");
         }
     } while(opcion != 6);
 
