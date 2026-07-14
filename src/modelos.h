@@ -6,7 +6,8 @@
 #define MAX_TIPO_CUENTA 20
 
 // * Transacción
-typedef struct {
+typedef struct 
+{
     int id_transaccion;
     char tipo[20];       // "Deposito", "Retiro", "Transferencia"
     float monto;
@@ -14,7 +15,8 @@ typedef struct {
 } Transaccion;
 
 // * Cuenta
-typedef struct {
+typedef struct 
+{
     int numero_cuenta;
     char tipo_cuenta[MAX_TIPO_CUENTA]; // "Ahorros", "Corriente"
     float saldo_actual;
@@ -26,7 +28,8 @@ typedef struct {
 } Cuenta;
 
 // * Cliente
-typedef struct {
+typedef struct 
+{
     char cedula[MAX_CEDULA];
     char nombre_completo[MAX_NOMBRE]; // Manejo de strings para nombres
     Cuenta cuenta_bancaria;
