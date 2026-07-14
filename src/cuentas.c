@@ -4,10 +4,11 @@
 #include <ctype.h>
 #include "cuentas.h"
 #include "validaciones.h"
+#include "acceso.h"
 
 void registrar_cliente(Cliente *cliente, const char *cedula_validada)
 {
-    // * 1. Inicialización de datos personales si es el primer registro del cliente
+    // * 1. Inicializacion de datos personales si es el primer registro del cliente
     if (cliente->num_cuentas == 0)
     {
         strcpy(cliente->cedula, cedula_validada);
@@ -81,7 +82,7 @@ void registrar_cliente(Cliente *cliente, const char *cedula_validada)
             }
         }
 
-        // ! NORMALIZACION DE DATOS: Formato Title Case (Sensible a guiones y apostrofes)
+        // ! NORMALIZACION DE DATOS: Formato Title Case
         int capitalizar_siguiente = 1; 
         
         for (int i = 0; cliente->nombre_completo[i] != '\0'; i++)
@@ -102,9 +103,18 @@ void registrar_cliente(Cliente *cliente, const char *cedula_validada)
                 cliente->nombre_completo[i] = tolower(c);
             }
         }
+
+        // ! REGISTRO DE CREDENCIALES
+        char nueva_password[50];
+        printf("Cree una contrasena para el acceso digital del cliente: ");
+        leerCadenaSegura(nueva_password, 50);
+        
+        // * Guardado automatico persistente (RBAC) con username igual a cedula y rol USUARIO
+        registrar_nuevo_usuario(cliente->cedula, nueva_password);
+        printf("=> Credenciales creadas exitosamente. Usuario de acceso: %s\n", cliente->cedula);
     }
 
-    // * 2. Validación de Límites de Cuenta
+    // * 2. Validacion de Limites de Cuenta
     if (cliente->num_cuentas >= MAX_CUENTAS_POR_CLIENTE)
     {
         printf("\n========================================\n");
@@ -116,7 +126,7 @@ void registrar_cliente(Cliente *cliente, const char *cedula_validada)
         return;
     }
 
-    // * 3. Inicialización matemática y comercial de la nueva cuenta
+    // * 3. Inicializacion matematica y comercial de la nueva cuenta
     int indice_nueva_cuenta = cliente->num_cuentas;
     Cuenta *nueva_cuenta = &cliente->cuentas[indice_nueva_cuenta];
 
@@ -151,7 +161,7 @@ void registrar_cliente(Cliente *cliente, const char *cedula_validada)
     nueva_cuenta->num_transacciones = 0;
     nueva_cuenta->capacidad_historial = CAPACIDAD_INICIAL_HISTORIAL;
 
-    // * Asignación dinámica de memoria en el Heap
+    // * Asignacion dinamica de memoria en el Heap
     nueva_cuenta->historial = (Transaccion *)malloc(CAPACIDAD_INICIAL_HISTORIAL * sizeof(Transaccion));
 
     if (nueva_cuenta->historial == NULL)
@@ -169,16 +179,4 @@ void registrar_cliente(Cliente *cliente, const char *cedula_validada)
     printf("Cuenta Aperturada:  #%d (%s)\n", nueva_cuenta->numero_cuenta, nueva_cuenta->tipo_cuenta);
     printf("Cuentas Totales:    %d / %d\n", cliente->num_cuentas, MAX_CUENTAS_POR_CLIENTE);
     printf("========================================\n");
-}
-
-int buscar_cliente_por_cedula(Cliente banco[], int total_clientes, const char *cedula)
-{
-    for (int i = 0; i < total_clientes; i++)
-    {
-        if (strcmp(banco[i].cedula, cedula) == 0)
-        {
-            return i; 
-        }
-    }
-    return -1; 
 }
