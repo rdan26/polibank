@@ -9,7 +9,7 @@
 typedef struct 
 {
     int id_transaccion;
-    char tipo[20];       // "Deposito", "Retiro", "Transferencia"
+    char tipo[100];       // "Deposito", "Retiro", "Transferencia"
     float monto;
     char fecha[11];      // Formato "DD/MM/YYYY"
 } Transaccion;
