@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "modelos.h"
+#include "cuentas.h"
 #include "validaciones.h"
+#include "transacciones.h"
 
 int main() 
 {
@@ -28,24 +30,35 @@ int main()
 
         switch(opcion) {
             case 1:
-                printf("\n[ Modulo de Registro en construccion ]\n");
+                printf("\n[ MODULO DE REGISTRO ]\n");
                 printf("Ingrese el numero de cedula (10 digitos): ");
                 
-                // ! La ejecucion se detiene aqui hasta que se apruebe el algoritmo Modulo 10
-                leer_cedula_valida(nuevo_cliente.cedula);
+                // * Se valida la cedula en un buffer temporal
+                char cedula_temporal[15]; 
+                leer_cedula_valida(cedula_temporal);
                 
-                printf("=> Estructura aceptada: Cedula %s validada matematicamente.\n", nuevo_cliente.cedula);
+                // * Se inyecta la memoria temporal pura hacia el constructor del cliente
+                // * Pasamos &nuevo_cliente para que 'registrar_cliente' modifique la memoria original
+                registrar_cliente(&nuevo_cliente, cedula_temporal);
                 break;
                 
             case 2:
-                printf("\n[ Modulo de Transacciones ]\n");
-                printf("Ingrese el monto a depositar: $");
-                
-                // ! La ejecucion se detiene aqui hasta recibir un formato financiero estricto
-                monto_prueba = leerMontoValido(); 
-                
-                printf("=> Logica aceptada: Monto $%.2f procesado exitosamente.\n", monto_prueba);
+            printf("\n[ MODULO DE DEPOSITOS ]\n");
+
+            // * Validacion de seguridad -> evita que se deposite si el cliente no existe
+            // * Usamos el numero de cuenta para saber si la inicializacion de 'case 1' ya ocurrio
+            if (nuevo_cliente.cuenta_bancaria.numero_cuenta == 0)
+            {
+                printf("Error: Debe registrar un cliente primero (Opcion 1).\n");
                 break;
+            }
+
+            printf("Ingrese el monto a depositar: $");
+            monto_prueba = leerMontoValido(); 
+
+            // * Procesamiento matematico y de memoria
+            procesar_deposito(&nuevo_cliente, monto_prueba);
+            break;
                 
             case 3:
                 printf("\n[ Modulo de Transferencias en construccion ]\n");
