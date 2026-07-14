@@ -50,7 +50,6 @@ int main() {
                 break;
             default:
                 printf("\nOpcion no valida. Intente de nuevo.\n");
-                break;
         }
     } while(opcion != 6);
 
