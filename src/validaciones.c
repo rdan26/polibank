@@ -40,10 +40,17 @@ float leerMontoValido(void)
     {
         leerCadenaSegura(entrada, MAX_BUFFER_ENTRADA);
 
-        // ! Evita espacios iniciales, signos o puntos huerfanos (ej. " .45")
+        // ! Intercepcion especifica de signos negativos a nivel de caracter
+        if (entrada[0] == '-')
+        {
+            printf("Error: No se aceptan transacciones con valores negativos. Intente de nuevo: $");
+            continue;
+        }
+
+        // ! Evita espacios iniciales, simbolos extra o puntos huerfanos (ej. " .45")
         if (!isdigit(entrada[0]))
         {
-            printf("Error: El monto debe iniciar con un numero (ej. 0.45). Intente de nuevo: ");
+            printf("Error: El monto debe iniciar con un digito valido (ej. 5.00 o 150.50). Intente de nuevo: $");
             continue;
         }
 
@@ -57,17 +64,17 @@ float leerMontoValido(void)
         // * Convierte el texto puro a flotante en memoria
         monto = strtof(entrada, &fin_ptr);
 
-        // ! Detecta caracteres alfabeticos mezclados despues del numero (ej. "150a")
-        if (fin_ptr == entrada || *fin_ptr != '\0')
+        // ! Detecta caracteres alfabeticos mezclados despues del numero
+        if (fin_ptr == entrada || (*fin_ptr != '\0' && *fin_ptr != '\n' && *fin_ptr != '\r'))
         {
             printf("Error: Entrada invalida. Por favor, ingrese un valor numerico: ");
             continue;
         }
 
-        // ! Asegura transacciones positivas (ni cero ni negativas)
-        if (monto <= 0)
+        // ! Asegura que no se ingresen transacciones de valor cero (los negativos ya se filtraron arriba)
+        if (monto == 0)
         {
-            printf("Error: El monto debe ser mayor que cero. Intente de nuevo: ");
+            printf("Error: El monto debe ser mayor que cero. Intente de nuevo: $");
             continue;
         }
 
@@ -76,19 +83,20 @@ float leerMontoValido(void)
         
         if (punto == NULL)
         {
-            // ! Rechaza numeros enteros puros obligando el uso de ".00"
-            printf("Error: Debe incluir los centavos. Ingrese exactamente dos decimales (ej. %.2f): ", monto);
+            printf("Error: Debe incluir los centavos. Ingrese exactamente dos decimales (ej. %.2f): $", monto);
             continue;
         }
         else
         {
-            // ! Cuenta la longitud de la cadena que existe despues del punto
-            int decimales = strlen(punto + 1); 
+            int decimales = 0;
+            for (int i = 1; punto[i] != '\0' && punto[i] != '\n' && punto[i] != '\r'; i++)
+            {
+                decimales++;
+            }
             
             if (decimales != 2)
             {
-                // ! Rechaza montos con 1 o más de 2 decimales (ej. "10.9" o "10.999")
-                printf("Error: Formato estricto. Ingrese exactamente dos decimales (ej. 10.90): ");
+                printf("Error: Formato estricto. Ingrese exactamente dos decimales (ej. %.2f): $", monto);
                 continue;
             }
         }
