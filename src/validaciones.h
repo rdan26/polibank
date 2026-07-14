@@ -22,6 +22,6 @@ float leerMontoValido(void);
 int validar_cedula_ecuatoriana(const char *cedula);
 
 // * Bucle que exige al usuario una cédula regionalmente válida
-void leer_cedula_valida(char *destino);
+int leer_cedula_valida(char *destino);
 
 #endif // VALIDACIONES_H

@@ -78,6 +78,15 @@ float leerMontoValido(void)
             continue;
         }
 
+        // ! Proteccion contra desbordamiento
+        // * Protege la memoria evitando perder la precision de los centavos en montos masivos.
+        if (monto > 9999999.99f)
+        {
+            printf("Error: Limite estructural excedido. El sistema soporta un maximo de $9999999.99 por transaccion.\n");
+            printf("Por favor, ingrese un monto menor: $");
+            continue;
+        }
+
         // ! Validacion de formato monetario estricto (x.xx)
         char* punto = strchr(entrada, '.'); 
         
@@ -155,21 +164,29 @@ int validar_cedula_ecuatoriana(const char *cedula)
     return (digito_calculado == digito_real);
 }
 
-// * Bucle que exige un identificador regional real
-void leer_cedula_valida(char *destino)
+// * Bucle que exige un identificador regional real o permite cancelar la operacion
+int leer_cedula_valida(char *destino)
 {
     while (1)
     {
         // ! MAX_CEDULA es 15 (definido en modelos.h) para evitar desbordamientos si el usuario tipea de más
         leerCadenaSegura(destino, MAX_CEDULA);
         
+        // ! MECANISMO DE ESCAPE: Si el usuario teclea 'X' o 'x' y da Enter
+        if ((destino[0] == 'X' || destino[0] == 'x') && destino[1] == '\0')
+        {
+            return 0; // * Retorna 0 (Falso/Cancelado) al main
+        }
+
         if (validar_cedula_ecuatoriana(destino))
         {
-            break; // ! La estructura de datos es valida, salimos del bucle
+            return 1; // ! La estructura de datos es valida, retorna 1 (Verdadero/Exito)
         }
         else
         {
-            printf("Error: Cedula ecuatoriana invalida o falsa. Ingrese 10 digitos reales: ");
+            // Se actualiza el mensaje para instruir al usuario sobre la ruta de escape
+            printf("Error: Cedula ecuatoriana invalida o falsa.\n");
+            printf("Ingrese 10 digitos reales (o 'X' para cancelar): ");
         }
     }
 }
