@@ -15,7 +15,7 @@ void leerCadenaSegura(char* destino, int longitud_max);
 
 // * --- Funciones de Validación Lógica y Financiera ---
 
-// * Retorna un flotante estrictamente formateado (positivo y con 2 decimales)
+// * Retorna un flotante formateado (acepta entero, 1 o 2 decimales, positivo)
 float leerMontoValido(void);
 
 // * Algoritmo Módulo 10 puro (retorna 1 si es válida, 0 si es falsa)

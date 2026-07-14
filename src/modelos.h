@@ -4,6 +4,7 @@
 #define MAX_NOMBRE 100
 #define MAX_CEDULA 15
 #define MAX_TIPO_CUENTA 20
+#define MAX_CUENTAS_POR_CLIENTE 3
 
 // * Transacción
 typedef struct 
@@ -32,7 +33,8 @@ typedef struct
 {
     char cedula[MAX_CEDULA];
     char nombre_completo[MAX_NOMBRE]; // Manejo de strings para nombres
-    Cuenta cuenta_bancaria;
+    Cuenta cuentas[MAX_CUENTAS_POR_CLIENTE];
+    int num_cuentas;
 } Cliente;
 
 #endif
