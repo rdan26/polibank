@@ -6,7 +6,24 @@
 #define MAX_TIPO_CUENTA 20
 #define MAX_CUENTAS_POR_CLIENTE 3
 
-// * Transacción
+// * Definicion de roles del sistema
+typedef enum
+{
+    GERENTE = 0,
+    ADMIN = 1,
+    CAJERO = 2,
+    USUARIO = 3
+} Rol;
+
+// * Estructura para credenciales y RBAC
+typedef struct
+{
+    char username[50];
+    char password[50];
+    Rol rol;
+} Usuario;
+
+// * Transaccion
 typedef struct 
 {
     int id_transaccion;
@@ -22,17 +39,17 @@ typedef struct
     char tipo_cuenta[MAX_TIPO_CUENTA]; // "Ahorros", "Corriente"
     float saldo_actual;
     
-    // * Manejo de memoria dinámica para listas de transacciones de tamaño variable
+    // * Manejo de memoria dinamica para listas de transacciones de tamano variable
     Transaccion *historial; 
-    int num_transacciones;     // Cuántas transacciones existen actualmente
-    int capacidad_historial;   // Cuánta memoria hemos reservado (para usar con realloc)
+    int num_transacciones;     
+    int capacidad_historial;   
 } Cuenta;
 
 // * Cliente
 typedef struct 
 {
     char cedula[MAX_CEDULA];
-    char nombre_completo[MAX_NOMBRE]; // Manejo de strings para nombres
+    char nombre_completo[MAX_NOMBRE]; 
     Cuenta cuentas[MAX_CUENTAS_POR_CLIENTE];
     int num_cuentas;
 } Cliente;
