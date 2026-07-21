@@ -3,11 +3,10 @@
 
 #include "modelos.h"
 
-// * Define la cantidad de espacio inicial para el historial
 #define CAPACIDAD_INICIAL_HISTORIAL 10
 
-// * Construye o anade una cuenta a la instancia del cliente y asigna memoria dinamica
-// * Tambien solicita la creacion de credenciales si es un cliente nuevo.
-void registrar_cliente(Cliente *cliente, const char *cedula_validada);
+int registrar_cliente(Cliente *cliente, const char *cedula_validada);
+void actualizar_datos_cliente(Cliente *cliente);
+void cerrar_cuenta(Cliente banco[], int *total_clientes, int indice_cliente, int numero_cuenta);
 
 #endif // CUENTAS_H

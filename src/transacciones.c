@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "transacciones.h"
 #include "validaciones.h"
 
@@ -19,12 +20,7 @@ void procesar_deposito(Cliente *cliente, int numero_cuenta, float monto)
 
     if (cta == NULL)
     {
-        printf("\n========================================\n");
-        printf("[ERROR DE TRANSACCION]\n");
-        printf("Motivo: No se puede procesar el deposito.\n");
-        printf("Causal: El numero de cuenta %d no pertenece al titular con cedula %s.\n", numero_cuenta, cliente->cedula);
-        printf("Accion: Verifique el identificador de cuenta e intente de nuevo.\n");
-        printf("========================================\n");
+        printf("\nError: No se puede procesar el deposito. Cuenta no encontrada.\n");
         return;
     }
 
@@ -48,7 +44,10 @@ void procesar_deposito(Cliente *cliente, int numero_cuenta, float monto)
     cta->historial[indice].id_transaccion = rand() % 9000 + 1000; 
     strcpy(cta->historial[indice].tipo, "Deposito");
     cta->historial[indice].monto = monto;
-    strcpy(cta->historial[indice].fecha, "13/07/2026"); 
+    
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    strftime(cta->historial[indice].fecha, 11, "%d/%m/%Y", &tm);
 
     cta->saldo_actual += monto;
     cta->num_transacciones++;
@@ -56,6 +55,7 @@ void procesar_deposito(Cliente *cliente, int numero_cuenta, float monto)
     printf("\n========================================\n");
     printf("[DEPOSITO PROCESADO]\n");
     printf("Comprobante ID:     #%d\n", cta->historial[indice].id_transaccion);
+    printf("Fecha:              %s\n", cta->historial[indice].fecha);
     printf("Cliente:            %s\n", cliente->nombre_completo);
     printf("Cuenta Afectada:    #%d\n", cta->numero_cuenta);
     printf("Monto Ingresado:    $%.2f\n", monto);
@@ -88,63 +88,63 @@ void procesar_transferencia(Cliente *origen, int num_cuenta_origen, Cliente *des
 
     if (cta_origen == NULL || cta_destino == NULL)
     {
-        printf("\n========================================\n");
-        printf("[ERROR DE TRANSACCION]\n");
-        printf("Motivo: Verificacion de cuentas fallida.\n");
-        printf("Accion: Valide los parametros de transferencia.\n");
-        printf("========================================\n");
+        printf("\nError: Verificacion de cuentas fallida.\n");
         return;
     }
 
     if (monto > cta_origen->saldo_actual)
     {
-        printf("\n========================================\n");
-        printf("[ERROR DE TRANSACCION]\n");
-        printf("Motivo: Fondos insuficientes.\n");
-        printf("Causal: El monto solicitado ($%.2f) excede el saldo ($%.2f).\n", monto, cta_origen->saldo_actual);
-        printf("========================================\n");
+        printf("\nError: Fondos insuficientes para la transferencia.\n");
         return;
+    }
+
+    if (cta_origen->num_transacciones >= cta_origen->capacidad_historial)
+    {
+        int nueva_cap_o = cta_origen->capacidad_historial * 2;
+        Transaccion *temp_o = (Transaccion *)realloc(cta_origen->historial, nueva_cap_o * sizeof(Transaccion));
+        if (temp_o == NULL)
+        {
+            printf("\nError CRITICO: Memoria insuficiente para registrar en cuenta origen.\n");
+            return;
+        }
+        cta_origen->historial = temp_o;
+        cta_origen->capacidad_historial = nueva_cap_o;
+    }
+
+    if (cta_destino->num_transacciones >= cta_destino->capacidad_historial)
+    {
+        int nueva_cap_d = cta_destino->capacidad_historial * 2;
+        Transaccion *temp_d = (Transaccion *)realloc(cta_destino->historial, nueva_cap_d * sizeof(Transaccion));
+        if (temp_d == NULL)
+        {
+            printf("\nError CRITICO: Memoria insuficiente para registrar en cuenta destino.\n");
+            return;
+        }
+        cta_destino->historial = temp_d;
+        cta_destino->capacidad_historial = nueva_cap_d;
     }
 
     cta_origen->saldo_actual -= monto;
     cta_destino->saldo_actual += monto;
     
-    // Historial origen
-    if (cta_origen->num_transacciones >= cta_origen->capacidad_historial)
-    {
-        cta_origen->capacidad_historial *= 2;
-        cta_origen->historial = (Transaccion *)realloc(cta_origen->historial, cta_origen->capacidad_historial * sizeof(Transaccion));
-    }
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
     
     int indice_origen = cta_origen->num_transacciones;
     cta_origen->historial[indice_origen].id_transaccion = rand() % 9000 + 1000;
     strcpy(cta_origen->historial[indice_origen].tipo, "Transferencia Enviada");
     cta_origen->historial[indice_origen].monto = monto; 
-    strcpy(cta_origen->historial[indice_origen].fecha, "13/07/2026");
+    strftime(cta_origen->historial[indice_origen].fecha, 11, "%d/%m/%Y", &tm);
     cta_origen->num_transacciones++;
-    
-    // Historial destino
-    if (cta_destino->num_transacciones >= cta_destino->capacidad_historial)
-    {
-        cta_destino->capacidad_historial *= 2;
-        cta_destino->historial = (Transaccion *)realloc(cta_destino->historial, cta_destino->capacidad_historial * sizeof(Transaccion));
-    }
     
     int indice_destino = cta_destino->num_transacciones;
     cta_destino->historial[indice_destino].id_transaccion = rand() % 9000 + 1000;
     strcpy(cta_destino->historial[indice_destino].tipo, "Transferencia Recibida");
     cta_destino->historial[indice_destino].monto = monto;
-    strcpy(cta_destino->historial[indice_destino].fecha, "13/07/2026");
+    strftime(cta_destino->historial[indice_destino].fecha, 11, "%d/%m/%Y", &tm);
     cta_destino->num_transacciones++;
     
-    printf("\n========================================\n");
-    printf("      COMPROBANTE DE TRANSFERENCIA      \n");
-    printf("========================================\n");
-    printf("ESTADO:         EXITOSA\n");
-    printf("TITULAR ORIGEN: %s\n", origen->nombre_completo);
-    printf("DESTINATARIO:   %s\n", destino->nombre_completo);
-    printf("MONTO ENVIADO:  $%.2f\n", monto);
-    printf("========================================\n");
+    printf("\n=> Transferencia exitosa de $%.2f hacia %s el %s.\n", monto, destino->nombre_completo, cta_origen->historial[indice_origen].fecha);
 }
 
 void procesar_retiro(Cliente *cliente, int numero_cuenta, float monto)
@@ -165,22 +165,33 @@ void procesar_retiro(Cliente *cliente, int numero_cuenta, float monto)
         return;
     }
     
-    cta->saldo_actual -= monto;
-    
     if (cta->num_transacciones >= cta->capacidad_historial)
     {
-        cta->capacidad_historial *= 2;
-        cta->historial = (Transaccion *)realloc(cta->historial, cta->capacidad_historial * sizeof(Transaccion));
+        int nueva_capacidad = cta->capacidad_historial * 2;
+        Transaccion *temp = (Transaccion *)realloc(cta->historial, nueva_capacidad * sizeof(Transaccion));
+        if (temp == NULL)
+        {
+            printf("\nError CRITICO: Memoria insuficiente para procesar el retiro.\n");
+            return;
+        }
+        cta->historial = temp;
+        cta->capacidad_historial = nueva_capacidad;
     }
+    
+    cta->saldo_actual -= monto;
     
     int indice = cta->num_transacciones;
     cta->historial[indice].id_transaccion = rand() % 9000 + 1000;
     strcpy(cta->historial[indice].tipo, "Retiro");
     cta->historial[indice].monto = monto;
-    strcpy(cta->historial[indice].fecha, "13/07/2026");
+    
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    strftime(cta->historial[indice].fecha, 11, "%d/%m/%Y", &tm);
+    
     cta->num_transacciones++;
     
-    printf("\nRetiro exitoso de $%.2f. Nuevo saldo: $%.2f\n", monto, cta->saldo_actual);
+    printf("\nRetiro exitoso de $%.2f el %s. Nuevo saldo: $%.2f\n", monto, cta->historial[indice].fecha, cta->saldo_actual);
 }
 
 void imprimir_estado_cuenta(const Cliente *cliente)
@@ -199,8 +210,6 @@ void imprimir_estado_cuenta(const Cliente *cliente)
         printf("Cuenta:   #%d (%s)\n", cta->numero_cuenta, cta->tipo_cuenta);
         printf("Saldo:    $%.2f\n", cta->saldo_actual);
         printf("----------------------------------------\n");
-        printf("        HISTORIAL DE TRANSACCIONES      \n");
-        printf("----------------------------------------\n");
 
         if (cta->num_transacciones == 0)
         {
@@ -210,16 +219,12 @@ void imprimir_estado_cuenta(const Cliente *cliente)
         {
             for (int i = 0; i < cta->num_transacciones; i++)
             {
-                printf("[%d] %-25s : $%.2f\n", 
-                       i + 1, 
-                       cta->historial[i].tipo, 
-                       cta->historial[i].monto);
+                printf("[%s] %-22s : $%.2f\n", cta->historial[i].fecha, cta->historial[i].tipo, cta->historial[i].monto);
             }
         }
     }
     printf("========================================\n");
 
-    // * Logica de Exportacion de Archivos corregida para codificacion limpia
     printf("\nDesea exportar este recibo a un archivo de texto? (S/N): ");
     char conf[10];
     leerCadenaSegura(conf, 10);
@@ -254,20 +259,13 @@ void imprimir_estado_cuenta(const Cliente *cliente)
                 {
                     for (int i = 0; i < cta->num_transacciones; i++)
                     {
-                        fprintf(archivo, "[%d] %-25s : $%.2f\n", 
-                               i + 1, 
-                               cta->historial[i].tipo, 
-                               cta->historial[i].monto);
+                        fprintf(archivo, "[%s] %-22s : $%.2f\n", cta->historial[i].fecha, cta->historial[i].tipo, cta->historial[i].monto);
                     }
                 }
             }
             fprintf(archivo, "========================================\n");
             fclose(archivo);
             printf("=> Exportacion exitosa. Archivo guardado como: %s\n", nombre_archivo);
-        }
-        else
-        {
-            printf("Error: No se pudo generar el archivo de texto.\n");
         }
     }
 }
