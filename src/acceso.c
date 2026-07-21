@@ -44,10 +44,15 @@ int iniciar_sesion(Usuario *usuario_logueado)
     printf("\n========================================\n");
     printf("         POLI BANK - INICIO DE SESION   \n");
     printf("========================================\n");
-    printf("Ingrese su usuario: ");
+    printf("Ingrese su usuario (o 'X' para cancelar): ");
     leerCadenaSegura(ingresado_user, 50);
     
-    printf("Ingrese su contrasena: ");
+    if (strcmp(ingresado_user, "X") == 0 || strcmp(ingresado_user, "x") == 0) {
+        printf("=> Inicio de sesion cancelado.\n");
+        return 0;
+    }
+    
+    printf("Ingrese su contrasena (Enter en blanco para cancelar): ");
     
     int i = 0;
     char ch;
@@ -80,14 +85,15 @@ int iniciar_sesion(Usuario *usuario_logueado)
     }
     printf("\n");
 
+    if (strlen(ingresado_pass) == 0) {
+        printf("=> Inicio de sesion cancelado.\n");
+        return 0;
+    }
+
     FILE *archivo = fopen(ARCHIVO_USUARIOS, "rb");
     if (archivo == NULL)
     {
-        printf("\n========================================\n");
-        printf("[ERROR DE SISTEMA]\n");
-        printf("Motivo: Base de datos de acceso no encontrada.\n");
-        printf("Accion: Contacte al administrador del sistema.\n");
-        printf("========================================\n");
+        printf("Error: Base de datos de acceso no encontrada.\n");
         return 0;
     }
 
@@ -117,11 +123,7 @@ int iniciar_sesion(Usuario *usuario_logueado)
     }
     else
     {
-        printf("\n========================================\n");
-        printf("[ACCESO DENEGADO]\n");
-        printf("Motivo: Credenciales invalidas.\n");
-        printf("Accion: Verifique sus datos e intente de nuevo.\n");
-        printf("========================================\n");
+        printf("\nError: Credenciales invalidas. Intente de nuevo.\n");
         return 0;
     }
 }
@@ -140,7 +142,7 @@ const char* obtener_nombre_rol(Rol rol)
 
 void registrar_nuevo_usuario(const char* username, const char* password)
 {
-    FILE *archivo = fopen(ARCHIVO_USUARIOS, "ab"); // "ab" para agregar al final
+    FILE *archivo = fopen(ARCHIVO_USUARIOS, "ab"); 
     if (archivo != NULL)
     {
         Usuario nuevo;

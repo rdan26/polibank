@@ -1,3 +1,5 @@
+/* ====== persistencia.c ====== */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -94,4 +96,17 @@ int cargar_sistema(Cliente banco[])
 
     fclose(archivo);
     return total_clientes;
+}
+
+void liberar_memoria_sistema(Cliente banco[], int total_clientes)
+{
+    // Barrido completo de la estructura dinamica para evitar fugas (Memory Leaks)
+    for (int i = 0; i < total_clientes; i++) {
+        for (int j = 0; j < banco[i].num_cuentas; j++) {
+            if (banco[i].cuentas[j].historial != NULL) {
+                free(banco[i].cuentas[j].historial);
+                banco[i].cuentas[j].historial = NULL; 
+            }
+        }
+    }
 }

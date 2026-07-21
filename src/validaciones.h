@@ -8,5 +8,6 @@ void leerCadenaSegura(char* destino, int longitud_max);
 float leerMontoValido(void);
 int validar_cedula_ecuatoriana(const char *cedula);
 int leer_cedula_valida(char *destino);
+int leer_nombre_valido(char *destino);
 
 #endif // VALIDACIONES_H

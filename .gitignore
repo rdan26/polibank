@@ -33,3 +33,7 @@ Desktop.ini
 *.dat
 proyecto_total.txt
 estado_cuenta_0650105547.txt
+balances_cuentas.csv
+log_boveda.txt
+ranking_saldos.txt
+codigo_completo_utf8.txt

@@ -1,29 +1,103 @@
+/* ====== reportes.c ====== */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "reportes.h"
 
-// * Recursividad profunda para recorrer clientes y cuentas sin usar bucles for/while
 float calcular_boveda_recursivo(const Cliente banco[], int total_clientes, int idx_cliente, int idx_cuenta)
 {
-    // Caso base 1: Hemos procesado todos los clientes
-    if (idx_cliente >= total_clientes)
-    {
-        return 0.0f;
-    }
+    if (idx_cliente >= total_clientes) return 0.0f;
     
-    // Caso base 2: Hemos procesado todas las cuentas del cliente actual, pasamos al siguiente
     if (idx_cuenta >= banco[idx_cliente].num_cuentas)
     {
         return calcular_boveda_recursivo(banco, total_clientes, idx_cliente + 1, 0);
     }
     
-    // Suma recursiva: Saldo actual + el resto del arbol de cuentas
     return banco[idx_cliente].cuentas[idx_cuenta].saldo_actual + 
            calcular_boveda_recursivo(banco, total_clientes, idx_cliente, idx_cuenta + 1);
 }
 
-// * Estructura temporal plana para facilitar el ordenamiento Quicksort
+void generar_log_boveda(float total_boveda, int total_clientes)
+{
+    FILE *archivo = fopen("log_boveda.txt", "a");
+    if (archivo != NULL)
+    {
+        time_t t = time(NULL);
+        struct tm tm = *localtime(&t);
+        
+        fprintf(archivo, "[%02d/%02d/%d %02d:%02d:%02d] AUDITORIA BOVEDA | Clientes: %d | Liquidez Total: $%.2f\n",
+                tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec,
+                total_clientes, total_boveda);
+        fclose(archivo);
+        printf("=> Log de auditoria anexado exitosamente en 'log_boveda.txt'\n");
+    }
+    else
+    {
+        printf("Error al generar el log de boveda en archivo de texto.\n");
+    }
+}
+
+float calcular_interes_recursivo(float capital, float tasa, int anios)
+{
+    if (anios == 0) return capital;
+    return (1.0f + tasa) * calcular_interes_recursivo(capital, tasa, anios - 1);
+}
+
+void proyectar_intereses_cliente(const Cliente *cliente)
+{
+    printf("\n--- PROYECCION DE INTERESES (CUENTAS DE AHORRO) ---\n");
+    int tiene_ahorros = 0;
+    
+    for (int i = 0; i < cliente->num_cuentas; i++)
+    {
+        if (strcmp(cliente->cuentas[i].tipo_cuenta, "Ahorros") == 0)
+        {
+            tiene_ahorros = 1;
+            float saldo_actual = cliente->cuentas[i].saldo_actual;
+            
+            printf("Cuenta #%d | Saldo Base: $%.2f\n", cliente->cuentas[i].numero_cuenta, saldo_actual);
+            
+            // Mejora UX: Lenguaje profesional en lugar de "anos"
+            printf("  -> Proyeccion a 1 periodo anual:    $%.2f\n", calcular_interes_recursivo(saldo_actual, 0.04f, 1));
+            printf("  -> Proyeccion a 3 periodos anuales: $%.2f\n", calcular_interes_recursivo(saldo_actual, 0.04f, 3));
+            printf("  -> Proyeccion a 5 periodos anuales: $%.2f\n", calcular_interes_recursivo(saldo_actual, 0.04f, 5));
+        }
+    }
+    
+    if (!tiene_ahorros)
+    {
+        printf("Aviso: El cliente no posee cuentas de Ahorros para proyectar intereses.\n");
+    }
+}
+
+void exportar_balances_csv(const Cliente banco[], int total_clientes)
+{
+    FILE *archivo = fopen("balances_cuentas.csv", "w");
+    if (archivo != NULL)
+    {
+        fprintf(archivo, "Cedula,Nombre Completo,Numero de Cuenta,Tipo,Saldo Actual\n");
+        for (int i = 0; i < total_clientes; i++)
+        {
+            for (int j = 0; j < banco[i].num_cuentas; j++)
+            {
+                fprintf(archivo, "%s,%s,%d,%s,%.2f\n", 
+                        banco[i].cedula, banco[i].nombre_completo, 
+                        banco[i].cuentas[j].numero_cuenta, 
+                        banco[i].cuentas[j].tipo_cuenta, 
+                        banco[i].cuentas[j].saldo_actual);
+            }
+        }
+        fclose(archivo);
+        printf("\n=> Balances exportados exitosamente a 'balances_cuentas.csv'\n");
+    }
+    else
+    {
+        printf("\nError: No se pudo generar el archivo CSV.\n");
+    }
+}
+
 typedef struct {
     char cedula[MAX_CEDULA];
     char nombre[MAX_NOMBRE];
@@ -45,8 +119,7 @@ int particion(FilaRanking arr[], int bajo, int alto)
     
     for (int j = bajo; j <= alto - 1; j++)
     {
-        // ! Orden descendente (Mayor a Menor)
-        if (arr[j].saldo > pivote)
+        if (arr[j].saldo > pivote) 
         {
             i++;
             intercambiar(&arr[i], &arr[j]);
@@ -70,25 +143,15 @@ void generar_ranking_saldos(const Cliente banco[], int total_clientes)
 {
     int total_cuentas = 0;
     
-    // * 1. Conteo total de elementos a ordenar
     for (int i = 0; i < total_clientes; i++)
     {
         total_cuentas += banco[i].num_cuentas;
     }
 
-    if (total_cuentas == 0)
-    {
-        printf("\nError: No existen cuentas activas para generar un ranking.\n");
-        return;
-    }
+    if (total_cuentas == 0) return;
 
-    // * 2. Asignacion dinamica para aplanar la estructura bidimensional
     FilaRanking *arreglo = (FilaRanking *)malloc(total_cuentas * sizeof(FilaRanking));
-    if (arreglo == NULL)
-    {
-        printf("\nError critico: Memoria insuficiente para procesar el Quicksort.\n");
-        return;
-    }
+    if (arreglo == NULL) return;
 
     int indice = 0;
     for (int i = 0; i < total_clientes; i++)
@@ -103,44 +166,15 @@ void generar_ranking_saldos(const Cliente banco[], int total_clientes)
         }
     }
 
-    // * 3. Ejecucion del Algoritmo Quicksort O(n log n)
     quicksort(arreglo, 0, total_cuentas - 1);
 
-    // * 4. Exportacion y despliegue
-    FILE *archivo = fopen("ranking_saldos.txt", "w");
-    
-    printf("\n======================================================\n");
-    printf("              RANKING DE CLIENTES (MAYOR SALDO)         \n");
-    printf("======================================================\n");
-    
-    if (archivo != NULL)
-    {
-        fprintf(archivo, "======================================================\n");
-        fprintf(archivo, "              RANKING DE CLIENTES (MAYOR SALDO)         \n");
-        fprintf(archivo, "======================================================\n");
-    }
-
+    printf("\n--- RANKING DE CLIENTES (MAYOR SALDO) ---\n");
     for (int i = 0; i < total_cuentas; i++)
     {
         printf("%d. [%s] %s | Cta: #%d | Saldo: $%.2f\n", 
                i + 1, arreglo[i].cedula, arreglo[i].nombre, 
                arreglo[i].numero_cuenta, arreglo[i].saldo);
-               
-        if (archivo != NULL)
-        {
-            fprintf(archivo, "%d. [%s] %s | Cta: #%d | Saldo: $%.2f\n", 
-                   i + 1, arreglo[i].cedula, arreglo[i].nombre, 
-                   arreglo[i].numero_cuenta, arreglo[i].saldo);
-        }
     }
-    printf("======================================================\n");
     
-    if (archivo != NULL)
-    {
-        fprintf(archivo, "======================================================\n");
-        fclose(archivo);
-        printf("=> Ranking exportado exitosamente a 'ranking_saldos.txt'\n");
-    }
-
     free(arreglo);
 }

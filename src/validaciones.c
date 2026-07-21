@@ -37,6 +37,11 @@ float leerMontoValido(void)
     {
         leerCadenaSegura(entrada, MAX_BUFFER_ENTRADA);
 
+        if ((entrada[0] == 'X' || entrada[0] == 'x') && entrada[1] == '\0')
+        {
+            return -1.0f;
+        }
+
         if (entrada[0] == '-')
         {
             printf("Error: No se aceptan transacciones con valores negativos. Intente de nuevo: $");
@@ -45,7 +50,7 @@ float leerMontoValido(void)
 
         if (!isdigit(entrada[0]))
         {
-            printf("Error: El monto debe iniciar con un digito valido (ej. 12, 12.5 o 12.50). Intente de nuevo: $");
+            printf("Error: El monto debe iniciar con un digito valido. Intente de nuevo: $");
             continue;
         }
 
@@ -93,7 +98,7 @@ float leerMontoValido(void)
             
             if (caracter_invalido_decimal || decimales < 1 || decimales > 2)
             {
-                printf("Error: Formato decimal incorrecto. Use un entero o hasta 2 decimales (ej. 15, 15.50): $");
+                printf("Error: Formato decimal incorrecto. Use hasta 2 decimales: $");
                 continue;
             }
         }
@@ -161,12 +166,90 @@ int leer_cedula_valida(char *destino)
         }
         else
         {
-            printf("\n========================================\n");
-            printf("[ERROR DE VALIDACION]\n");
-            printf("Motivo: Identificacion invalida.\n");
-            printf("Causal: Los digitos no cumplen el algoritmo Modulo 10.\n");
-            printf("Accion: Verifique su identificador.\n");
-            printf("========================================\n");
+            printf("Error: Identificacion invalida. Los digitos no cumplen el algoritmo Modulo 10.\n");
         }
     }
+}
+
+int leer_nombre_valido(char *destino)
+{
+    while (1)
+    {
+        leerCadenaSegura(destino, MAX_NOMBRE);
+
+        if ((destino[0] == 'X' || destino[0] == 'x') && destino[1] == '\0')
+        {
+            printf("=> Operacion cancelada.\n");
+            return 0;
+        }
+
+        int caracteres_validos = 1;
+        for (int i = 0; destino[i] != '\0'; i++)
+        {
+            char c = destino[i];
+            
+            if (!isalpha(c) && c != ' ' && c != '-' && c != '\'')
+            {
+                caracteres_validos = 0;
+                break;
+            }
+        }
+
+        if (!caracteres_validos)
+        {
+            printf("Error: El nombre contiene numeros o simbolos. Intente de nuevo (o 'X' para cancelar): ");
+            continue; 
+        }
+
+        int contador_palabras = 0;
+        int dentro_de_palabra = 0;
+
+        for (int i = 0; destino[i] != '\0'; i++)
+        {
+            if (destino[i] != ' ')
+            {
+                if (!dentro_de_palabra)
+                {
+                    contador_palabras++;
+                    dentro_de_palabra = 1; 
+                }
+            }
+            else
+            {
+                dentro_de_palabra = 0; 
+            }
+        }
+
+        if (contador_palabras >= 2)
+        {
+            break; 
+        }
+        else
+        {
+            printf("Error: Estructura incompleta. Debe ingresar al menos un nombre y un apellido (o 'X' para cancelar): ");
+        }
+    }
+
+    int capitalizar_siguiente = 1; 
+    
+    for (int i = 0; destino[i] != '\0'; i++)
+    {
+        char c = destino[i];
+        
+        if (c == ' ' || c == '-' || c == '\'')
+        {
+            capitalizar_siguiente = 1; 
+        }
+        else if (capitalizar_siguiente && isalpha(c))
+        {
+            destino[i] = toupper(c);
+            capitalizar_siguiente = 0; 
+        }
+        else if (isalpha(c))
+        {
+            destino[i] = tolower(c);
+        }
+    }
+
+    return 1;
 }
